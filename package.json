@@ -27,7 +27,9 @@
   },
   "homepage": "https://github.com/FelixMcFelix/Shallot#readme",
   "dependencies": {
-    "conductor-chord": "^1.0.0"
+    "conductor-chord": "^1.0.0",
+    "eventemitter2": "^1.0.0",
+    "node-forge": "^0.6.39"
   },
   "devDependencies": {
     "gulp": "^3.9.1",
