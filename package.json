@@ -1,0 +1,36 @@
+{
+  "name": "shallot",
+  "version": "0.0.0",
+  "description": "Small scale distributed onion routing over WebRTC.",
+  "main": "index.js",
+  "scripts": {
+    "test": "gulp test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/FelixMcFelix/Shallot.git"
+  },
+  "keywords": [
+    "webrtc",
+    "onion",
+    "routing",
+    "privacy",
+    "overlay",
+    "network",
+    "tor",
+    "dht"
+  ],
+  "author": "Kyle A. Simpson",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/FelixMcFelix/Shallot/issues"
+  },
+  "homepage": "https://github.com/FelixMcFelix/Shallot#readme",
+  "dependencies": {
+    "conductor-chord": "^1.0.0"
+  },
+  "devDependencies": {
+    "gulp": "^3.9.1",
+    "gulp-mocha": "^2.2.0"
+  }
+}
