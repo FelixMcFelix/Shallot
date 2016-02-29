@@ -2,7 +2,7 @@
   "name": "shallot",
   "version": "0.0.0",
   "description": "Small scale distributed onion routing over WebRTC.",
-  "main": "index.js",
+  "main": "src/Shallot.js",
   "scripts": {
     "test": "gulp test"
   },

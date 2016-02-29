@@ -20,7 +20,7 @@ class Shallot {
 		this._module = new ShallotModule(this.chord, this.config.shallotConfig);
 
 		//Hookup chord's events to our emitter.
-		this.chord.config.on("*", args => this.emit.apply(this, args));
+		this.chord.statemachine.on("*", args => this.emit.apply(this, args));
 	}
 
 	get emit () {
