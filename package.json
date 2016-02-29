@@ -29,6 +29,7 @@
   "dependencies": {
     "conductor-chord": "^1.0.0",
     "eventemitter2": "^1.0.0",
+    "js-sha3": "^0.5.1",
     "node-forge": "^0.6.39"
   },
   "devDependencies": {
