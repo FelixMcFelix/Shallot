@@ -66,23 +66,23 @@ class ShallotModule extends RemoteCallable {
 		for (let i = 0; i < this.config.routeLength; i++) {
 			(i=>{
 				let plannedId = new ID(
-					forgeUtil.ByteStringBuffer(random.getBytesSync(this.chord.config.idWidth/8))
+					forgeUtil.encode64(random.getBytesSync(this.chord.config.idWidth/8))
 				);
 
 				// Find what key our random id maps to.
 				// Lookup its public key.
 				// Fail if it does not exist.
-				routeProms[i] = this.chord.node.findSuccessor(plannedID)
+				routeProms[i] = this.chord.node.findSuccessor(plannedId)
 					.then(
-						id => {return this._lookupKey(id);}
+						node => {return this._lookupKey(node.id);}
 					);
 			})(i)
 		}
 
 		routeProms[this.config.routeLength] = this.chord.node.findSuccessor(id)
 			.then(
-				checkedId => {
-					if (ID.compare(checkedId, id) !== 0)
+				node => {
+					if (ID.compare(node.id, id) !== 0)
 						return Promise.reject(`Destination node ${ID.coerceString(id)} could not be found!`);
 
 					return this._lookupKey(id);
@@ -106,26 +106,30 @@ class ShallotModule extends RemoteCallable {
 			return new Promise ( (resolve, reject) => {
 				this.chord.lookupItem(idStr)
 					.then( pubKey => {
-						let hash = sha3["sha3_"+this.chord.config.idWidth].buffer(pubKey),
-							hashStr = ID.coerceString(new ID(hash));
-
 						//If it wasn't in the network, reject the original call.
 						//Also reject if the pubkey does not match the target.
-						if (pubKey===null || hashStr !== id)
+						if (pubKey===null)
 							reject("[Shallot] - couldn't find pubKey for "+idStr);
 						else {
-							//Build a new item for future lookups, and then resolve the original call.
-							let item = {
-								id,
-								pubKey,
-								cryptor: pki.publicKeyFromPem(pubKeyPem),
-								encrypt (msg) {
-									return this.cryptor.encrypt(msg, "RSA-OAEP");
-								}
-							};
+							let hash = sha3["sha3_"+this.chord.config.idWidth].buffer(pubKey),
+								hashStr = ID.coerceString(new ID(hash));
 
-							this.keyStore[idStr] = item;
-							resolve(item);
+							if (ID.compare(hashStr, id)!==0) {
+								reject("[Shallot] - mismatch of obtained pubKey for "+idStr);
+							} else {
+								//Build a new item for future lookups, and then resolve the original call.
+								let item = {
+									id,
+									pubKey,
+									cryptor: pki.publicKeyFromPem(pubKey),
+									encrypt (msg) {
+										return this.cryptor.encrypt(msg, "RSA-OAEP");
+									}
+								};
+
+								this.keyStore[idStr] = item;
+								resolve(item);
+							}
 						}
 					} )
 			} )
