@@ -13,7 +13,10 @@ const RemoteCallable = require("conductor-chord").RemoteCallable,
 class ShallotModule extends RemoteCallable {
 	static get defaultConfig () {
 		return {
-			routeLength: 3
+			routeLength: 3,
+			callTimeout: 666,
+			maxCallRetries: 3,
+			rcCacheDuration: 5000
 		};
 	};
 
@@ -22,9 +25,9 @@ class ShallotModule extends RemoteCallable {
 
 		this.config = u.mergeConfig(ShallotModule.defaultConfig, config);
 
-		this._rcTimeout = 666;
-	    this._rcRetries = 3;
-	    this._rcCacheDuration = 5000;
+		this._rcTimeout = this.config.callTimeout;
+	    this._rcRetries = this.config.maxCallRetries;
+	    this._rcCacheDuration = this.config.rcCacheDuration;
 
 	    this._evts = new EventEmitter2({
 	    	maxListeners: 20
@@ -58,7 +61,7 @@ class ShallotModule extends RemoteCallable {
 		}
 	}
 
-	connectTo (id) {
+	createRouteTo (id) {
 		//Generate a route.
 		//This is routeLength * randomIDs, + destination.
 		let routeProms = [];
@@ -93,6 +96,16 @@ class ShallotModule extends RemoteCallable {
 		// Afterwards, propagate the chain to build a session.
 
 		return Promise.all(routeProms);
+	}
+
+	connectTo (id) {
+		//First, get our route.
+		return this.createRouteTo(id)
+			.then(
+				route => {
+					
+				}
+			);
 	}
 
 	_lookupKey (id) {
