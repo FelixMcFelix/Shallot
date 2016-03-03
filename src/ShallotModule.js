@@ -79,10 +79,6 @@ class ShallotModule extends RemoteCallable {
 						reason => this.error(message, reason)
 					);
 				break;
-			case "c":
-				//CONTENT
-				//TODO
-				break;
 		}
 	}
 
@@ -138,13 +134,24 @@ class ShallotModule extends RemoteCallable {
 
 					let propagateLink = index => {
 						//End recursive promise chain.
-						if(index === routes.length)
-							return Promise.resolve(new Session(this, route, aesKeys, firstCirc));
+						if(index === routes.length) {
+							let data = {
+								f: ID.coerceString(this.chord.id)
+							};
+
+							return this._onionRelayBegin(aesKeys, route[0].id, circ, data)
+								.then(()=> {
+									return Promise.resolve(new Session(this, route, aesKeys, firstCirc));
+								})
+						}
 
 						//Package the aes key for each node along the chain.
 						let internal = {
 							k: route[index].encrypt(aesKeys[index])
 						};
+
+						//Our promise for both paths.
+						let a;
 
 						//If sending to the first node, we have to send a full build message instead
 						//of a relay.
@@ -153,6 +160,8 @@ class ShallotModule extends RemoteCallable {
 							internal.v = this.chord.key.private.sign(
 								sha3.sha3_224.hex(internal.k+internal.c)
 							);
+
+							a = this._sendBuild(route[0].id, internal);
 						} else {
 							//We need to inform the end of the route about the next hop.
 							//Encrypt this information just for it.
@@ -160,23 +169,10 @@ class ShallotModule extends RemoteCallable {
 
 							//Now wrap with as many layers as we can, and put our circuit id
 							//(secured, with the iv) in the message.
-							let i = index,
-								iv = random.getBytesSync(16),
-								out = JSON.stringify(internal);
-
-							while (i>=0) {
-								out = ShallotModule.aes_encrypt(out, aesKeys[i], iv);
-								i--;
-							}
-
-							internal = {
-								d: out,
-								s: route[0].encrypt(firstCirc+iv)
-							}
+							a = this._onionRelayBegin(aesKeys, route[0].id, firstCirc, internal, index-1);
 						}
 
-						return this.call(route[0].id, (index===0)?"b":"r", [internal])
-							.then(() => {return propagateLink(index+1);})
+						return a.then(() => {return propagateLink(index+1);})
 					}
 
 					//Begin propagation.
@@ -229,6 +225,28 @@ class ShallotModule extends RemoteCallable {
 		}
 	}
 
+	_sendOnion (aesKeys, firstHop, circ, data, index) {
+		let i = (index===undefined) ? aesKeys.length-1 : index,
+			iv = random.getBytesSync(16),
+			out = JSON.stringify(data);
+
+		while (i>=0) {
+			out = ShallotModule.aes_encrypt(out, aesKeys[i], iv);
+			i--;
+		}
+
+		let internal = {
+			d: out,
+			s: route[0].encrypt(circ+iv)
+		};
+
+		return this.call(firstHop, "r", [internal]);
+	}
+
+	_sendBuild (firstHop, data) {
+		return this.call(firstHop, "b", [data]);
+	}
+
 	_parseRelay (content) {
 		//PACKET FORMAT
 		//d: encrypted data for us to decode.
@@ -238,7 +256,8 @@ class ShallotModule extends RemoteCallable {
 		//	relay - data cannot be JSON parsed, circuit has a next hop.
 		//	build - data can be parsed, we must take the d field and add
 		//			c and v fields (circuit+this id, signature).
-		//			e: 1 => we are the end node
+		//	finish - message dictating that the given circuit is an exit point.
+		//			contains f: entry point's id.
 		//	content - data can be JSON parsed - ouput at session attached
 		//			to circuit.
 
