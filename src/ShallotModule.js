@@ -256,18 +256,46 @@ class ShallotModule extends RemoteCallable {
 		//	relay - data cannot be JSON parsed, circuit has a next hop.
 		//	build - data can be parsed, we must take the d field and add
 		//			c and v fields (circuit+this id, signature).
-		//	finish - message dictating that the given circuit is an exit point.
+		//	finish - JSON message dictating that the given circuit is an exit point.
 		//			contains f: entry point's id.
 		//	content - data can be JSON parsed - ouput at session attached
 		//			to circuit.
 
+		//Parse "s" - decrypt, then first 8 bytes are circuit, next 16 are iv for AES.
+		let decS = this.chord.key.private.decrypt(content.s),
+			circ = decS.substr(0, 8),
+			iv = decS.substr(8, 16);
+
+		//We can now decrypt d.
+		//TODO
 	}
 
 	_parseBuild (content) {
 		//PACKET FORMAT
 		//k: our aes key for this circuit segment
-		//c: encypted circuit code, + last hop's ID
+		//c: pub encypted circuit code, + last hop's ID
 		//v: signature, signed by last hop.
+
+		//First, read in AES key, circuit and last hop.
+		let aesKey = this.chord.key.private.decrypt(content.k),
+			decC = this.chord.key.private.decrypt(content.c),
+			circ = decC.substr(0,8),
+			lastHopId = decC.slice(8),
+			verHash = sha3.sha3_224.hex(content.k+content.c);
+
+		//Now, verify the hash to ensure origin is correct.
+		return this._lookupKey(lastHopId)
+			.then(
+				key => {
+					let ver = key.verify(verHash, content.v);
+
+					if (!ver)
+						return Promise.reject("Could not verify build packet!");
+
+					//Now, place the circuit in the internal tables.
+					//TODO
+				}
+			)
 	}
 
 	static aes_encrypt (data, aesKey, iv) {
