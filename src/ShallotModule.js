@@ -270,6 +270,41 @@ class ShallotModule extends RemoteCallable {
 			//We can now decrypt d.
 			let packetRaw = aes_decrypt(content.d, this.circuits[circ].aes, iv),
 				packet = ShallotModule.determinePacket(packetRaw);
+
+			switch (packet.type) {
+				case "build":
+					//Parse the d field - this contains our next hop.
+					let nextHop = this.chord.key.private.decrypt(packet.data.d),
+						nextCirc = random.getBytesSync(8);
+
+					//Lookup next hop's public key.
+					delete packet.data.d;
+					this._lookupKey(nextHop)
+						.then( key => {
+							//Modify the packet with c, v fields.
+							packet.data.c = key.encrypt(nextCirc+ID.coerceString(nextHop));
+							packet.data.v = this.chord.key.private.sign(
+								sha3.sha3_224.hex(packet.data.k+packet.data.c)
+							)
+
+							//Augment our circuit.
+							this.circuits[circ].nextHop = nextHop;
+							this.circuits[circ].nextCirc = nextCirc;
+
+							//Send to next hop.
+							return this._sendBuild(nextHop, packet.data)
+								.then(res => resolve(res));
+
+						})
+						.catch(reason => reject(reason));
+					break;
+				case "finish":
+					//Create a new RecvSession for this circuit.
+					break;
+				case "content":
+					//Fire onmessage events of RecvSession attached to this circuit.
+					break;
+			}
 		} );
 	}
 
@@ -312,6 +347,7 @@ class ShallotModule extends RemoteCallable {
 	}
 
 	static determinePacket (packetRaw) {
+		//Get a packet from the inside of an onion layer.
 		//Can contain:
 		//	relay - data cannot be JSON parsed, circuit has a next hop.
 		//	build - data can be parsed, has d,k.
