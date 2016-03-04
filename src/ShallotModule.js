@@ -261,13 +261,16 @@ class ShallotModule extends RemoteCallable {
 		//	content - data can be JSON parsed - ouput at session attached
 		//			to circuit.
 
-		//Parse "s" - decrypt, then first 8 bytes are circuit, next 16 are iv for AES.
-		let decS = this.chord.key.private.decrypt(content.s),
-			circ = decS.substr(0, 8),
-			iv = decS.substr(8, 16);
+		return new Promise( (resolve, reject) => {
+			//Parse "s" - decrypt, then first 8 bytes are circuit, next 16 are iv for AES.
+			let decS = this.chord.key.private.decrypt(content.s),
+				circ = decS.substr(0, 8),
+				iv = decS.substr(8, 16);
 
-		//We can now decrypt d.
-		//TODO
+			//We can now decrypt d.
+			let packetRaw = aes_decrypt(content.d, this.circuits[circ].aes, iv),
+				packet = ShallotModule.determinePacket(packetRaw);
+		} );
 	}
 
 	_parseBuild (content) {
@@ -277,25 +280,71 @@ class ShallotModule extends RemoteCallable {
 		//v: signature, signed by last hop.
 
 		//First, read in AES key, circuit and last hop.
-		let aesKey = this.chord.key.private.decrypt(content.k),
-			decC = this.chord.key.private.decrypt(content.c),
-			circ = decC.substr(0,8),
-			lastHopId = decC.slice(8),
-			verHash = sha3.sha3_224.hex(content.k+content.c);
+		return new Promise( (resolve, reject) => {
+			let aesKey = this.chord.key.private.decrypt(content.k),
+				decC = this.chord.key.private.decrypt(content.c),
+				circ = decC.substr(0,8),
+				lastHopId = decC.slice(8),
+				verHash = sha3.sha3_224.hex(content.k+content.c);
 
-		//Now, verify the hash to ensure origin is correct.
-		return this._lookupKey(lastHopId)
-			.then(
-				key => {
-					let ver = key.verify(verHash, content.v);
+			//Now, verify the hash to ensure origin is correct.
+			this._lookupKey(lastHopId)
+				.then(
+					key => {
+						let ver = key.verify(verHash, content.v);
 
-					if (!ver)
-						return Promise.reject("Could not verify build packet!");
+						if (!ver)
+							reject("Could not verify build packet!");
 
-					//Now, place the circuit in the internal tables.
-					//TODO
-				}
-			)
+						//Now, place the circuit in the internal tables.
+						this.circuits[circ] = {
+							aes: aesKey,
+							lastHop: lastHopId,
+							nextHop: null
+						}
+
+						resolve(true);
+					},
+
+					err => reject(err)
+				)
+		} );
+	}
+
+	static determinePacket (packetRaw) {
+		//Can contain:
+		//	relay - data cannot be JSON parsed, circuit has a next hop.
+		//	build - data can be parsed, has d,k.
+		//	finish - JSON message, has f.
+		//	content - data can be JSON parsed, has c
+
+		let out = {
+			type: null,
+			data: null
+		},
+		inter;
+
+		try {
+			inter = JSON.parse(packetRaw);
+		} catch (e) {
+			out.type = "relay";
+			out.data = packetRaw;
+
+			return out;
+		}
+
+		if (inter.d !== undefined && inter.k !== undefined)
+			out.type = "build"
+		else if (inter.f !== undefined)
+			out.type = "finish"
+		else if (inter.c !== undefined)
+			out.type = "content"
+		else
+			throw new Error("Illegal packet content: "+packetRaw);
+
+		out.data = inter;
+
+		return out;
 	}
 
 	static aes_encrypt (data, aesKey, iv) {
