@@ -273,12 +273,14 @@ class ShallotModule extends RemoteCallable {
 			let packetRaw = ShallotModule.aes_decrypt(content.d, this.circuits[circ].aes, iv),
 				packet = ShallotModule.determinePacket(packetRaw);
 
+			let nextHop, nextCirc;
+
 			switch (packet.type) {
 				case "relay":
 					//Lookup the circuit we are switching to.
-					let circData = this.circuits[circ],
-						nextHop = circData.nextHop,
-						nextCirc = circData.nextCirc;
+					let circData = this.circuits[circ];
+					nextHop = circData.nextHop;
+					nextCirc = circData.nextCirc;
 
 					this._lookupKey(nextHop)
 						.then( key => {
@@ -294,8 +296,8 @@ class ShallotModule extends RemoteCallable {
 					break;
 				case "build":
 					//Parse the d field - this contains our next hop.
-					let nextHop = this.rsaDecrypt(packet.data.d),
-						nextCirc = random.getBytesSync(8);
+					nextHop = this.rsaDecrypt(packet.data.d);
+					nextCirc = random.getBytesSync(8);
 
 					//Lookup next hop's public key.
 					delete packet.data.d;
@@ -322,10 +324,12 @@ class ShallotModule extends RemoteCallable {
 
 					//Create a new RecvSession for this circuit.
 					this.circuits[circ].session = new RecvSession(this, startId);
+					resolve(true);
 					break;
 				case "content":
 					//Fire onmessage events of RecvSession attached to this circuit.
 					this.circuits[circ].session.content(packet.data.c);
+					resolve(true);
 					break;
 			}
 		} );
