@@ -274,6 +274,24 @@ class ShallotModule extends RemoteCallable {
 				packet = ShallotModule.determinePacket(packetRaw);
 
 			switch (packet.type) {
+				case "relay":
+					//Lookup the circuit we are switching to.
+					let circData = this.circuits[circ],
+						nextHop = circData.nextHop,
+						nextCirc = circData.nextCirc;
+
+					this._lookupKey(nextHop)
+						.then( key => {
+							//Modify the packet with c, v fields.
+							let out = {s: key.encrypt(nextCirc+iv), d:packet.data}
+
+							//Send to next hop.
+							return this.call(nextHop, "r", [out])
+								.then(res => resolve(res));
+
+						})
+						.catch(reason => reject(reason));
+					break;
 				case "build":
 					//Parse the d field - this contains our next hop.
 					let nextHop = this.rsaDecrypt(packet.data.d),
@@ -416,7 +434,7 @@ class ShallotModule extends RemoteCallable {
 		cipherObj.update(forgeUtil.createBuffer(data));
 		cipherObj.finish();
 
-		return {iv, data: cipherObj.output.data, tag: cipherObj.mode.tag.data};
+		return cipherObj.output.data;
 	}
 
 	static aes_decrypt (cipherText, aesKey, iv) {
