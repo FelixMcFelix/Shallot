@@ -43,6 +43,10 @@ class Shallot {
 	join (addr) {
 		return this.chord.join(addr);
 	}
+
+	connectTo (id) {
+		return this._module.connectTo(id);
+	}
 }
 
 module.exports = {

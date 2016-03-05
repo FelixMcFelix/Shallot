@@ -12,6 +12,9 @@ const RemoteCallable = require("conductor-chord").RemoteCallable,
 	Session = require("./Session.js"),
 	RecvSession = require("./RecvSession.js");
 
+//EVENTS
+//	.on("receiveConnection", recvSession)
+
 class ShallotModule extends RemoteCallable {
 	static get defaultConfig () {
 		return {

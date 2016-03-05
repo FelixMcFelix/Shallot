@@ -1,5 +1,8 @@
 "use strict";
 
+//EVENTS
+//	.on("close", destId)
+
 class Session {
 	constructor (shallot, route, aesKeys, circ) {
 		this.module = shallot;
@@ -25,7 +28,10 @@ class Session {
 	}
 
 	send (data) {
-		//TODO
+		return this.shallot._sendOnion(this.aesKeys, this.route[0].id, this.circ, data)
+			.catch(reason => {
+				this.emit("close", this.route[this.route.length-1].id)
+			});
 	}
 }
 
