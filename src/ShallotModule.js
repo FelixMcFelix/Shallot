@@ -8,6 +8,7 @@ const RemoteCallable = require("conductor-chord").RemoteCallable,
 	random = require("node-forge").random,
 	cipher = require("node-forge").cipher,
 	forgeUtil = require("node-forge").util,
+	md = require("node-forge").md,
 	u = require("./UtilFunctions.js"),
 	Session = require("./Session.js"),
 	RecvSession = require("./RecvSession.js");
@@ -160,9 +161,7 @@ class ShallotModule extends RemoteCallable {
 						//of a relay.
 						if (index===0) {
 							internal.c = route[0].encrypt(firstCirc+ID.coerceString(this.chord.id));
-							internal.v = this.rsaSign(
-								sha3.sha3_224.hex(internal.k+internal.c)
-							);
+							internal.v = this.rsaSign(internal.k+internal.c);
 
 							a = this._sendBuild(route[0], internal);
 						} else {
@@ -286,9 +285,7 @@ class ShallotModule extends RemoteCallable {
 						.then( key => {
 							//Modify the packet with c, v fields.
 							packet.data.c = key.encrypt(nextCirc+ID.coerceString(nextHop));
-							packet.data.v = this.rsaSign(
-								sha3.sha3_224.hex(packet.data.k+packet.data.c)
-							);
+							packet.data.v = this.rsaSign(packet.data.k+packet.data.c);
 
 							//Augment our circuit.
 							this.circuits[circ].nextHop = nextHop;
@@ -327,14 +324,13 @@ class ShallotModule extends RemoteCallable {
 			let aesKey = this.rsaDecrypt(content.k),
 				decC = this.rsaDecrypt(content.c),
 				circ = decC.substr(0,8),
-				lastHopId = decC.slice(8),
-				verHash = sha3.sha3_224.hex(content.k+content.c);
+				lastHopId = decC.slice(8);
 
 			//Now, verify the hash to ensure origin is correct.
 			this._lookupKey(lastHopId)
 				.then(
 					key => {
-						let ver = key.verify(verHash, content.v);
+						let ver = this.rsaVerify(content.k+content.c, content.v, key);
 
 						if (!ver)
 							reject("Could not verify build packet!");
@@ -358,8 +354,18 @@ class ShallotModule extends RemoteCallable {
 		return this.chord.key.privateKey.decrypt(data, "RSA-OAEP");
 	}
 
-	rsaSign (digest) {
-		return this.chord.key.privateKey.sign(digest);
+	rsaSign (data) {
+		let digestor = md.sha256.create();
+		digestor.update(data);
+
+		return this.chord.key.privateKey.sign(digestor);
+	}
+
+	rsaVerify (data, signature, key) {
+		let digestor = md.sha256.create();
+		digestor.update(data);
+
+		return key.verify(digestor.bytes(), signature);
 	}
 
 	static determinePacket (packetRaw) {
