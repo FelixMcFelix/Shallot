@@ -137,12 +137,12 @@ class ShallotModule extends RemoteCallable {
 
 					let propagateLink = index => {
 						//End recursive promise chain.
-						if(index === routes.length) {
+						if(index === route.length) {
 							let data = {
 								f: ID.coerceString(this.chord.id)
 							};
 
-							return this._onionRelayBegin(aesKeys, route[0].id, circ, data)
+							return this._sendOnion(aesKeys, route[0], firstCirc, data)
 								.then(()=> {
 									return Promise.resolve(new Session(this, route, aesKeys, firstCirc));
 								})
@@ -164,7 +164,7 @@ class ShallotModule extends RemoteCallable {
 								sha3.sha3_224.hex(internal.k+internal.c)
 							);
 
-							a = this._sendBuild(route[0].id, internal);
+							a = this._sendBuild(route[0], internal);
 						} else {
 							//We need to inform the end of the route about the next hop.
 							//Encrypt this information just for it.
@@ -172,11 +172,11 @@ class ShallotModule extends RemoteCallable {
 
 							//Now wrap with as many layers as we can, and put our circuit id
 							//(secured, with the iv) in the message.
-							a = this._onionRelayBegin(aesKeys, route[0].id, firstCirc, internal, index-1);
+							a = this._sendOnion(aesKeys, route[0], firstCirc, internal, index-1);
 						}
 
 						return a.then(() => {return propagateLink(index+1);})
-					}
+					};
 
 					//Begin propagation.
 					return propagateLink(0);
@@ -240,14 +240,14 @@ class ShallotModule extends RemoteCallable {
 
 		let internal = {
 			d: out,
-			s: route[0].encrypt(circ+iv)
+			s: firstHop.encrypt(circ+iv)
 		};
 
-		return this.call(firstHop, "r", [internal]);
+		return this.call(firstHop.id, "r", [internal]);
 	}
 
 	_sendBuild (firstHop, data) {
-		return this.call(firstHop, "b", [data]);
+		return this.call(firstHop.id, "b", [data]);
 	}
 
 	_parseRelay (content) {
@@ -271,7 +271,7 @@ class ShallotModule extends RemoteCallable {
 				iv = decS.substr(8, 16);
 
 			//We can now decrypt d.
-			let packetRaw = aes_decrypt(content.d, this.circuits[circ].aes, iv),
+			let packetRaw = ShallotModule.aes_decrypt(content.d, this.circuits[circ].aes, iv),
 				packet = ShallotModule.determinePacket(packetRaw);
 
 			switch (packet.type) {
@@ -288,7 +288,7 @@ class ShallotModule extends RemoteCallable {
 							packet.data.c = key.encrypt(nextCirc+ID.coerceString(nextHop));
 							packet.data.v = this.chord.key.private.sign(
 								sha3.sha3_224.hex(packet.data.k+packet.data.c)
-							)
+							);
 
 							//Augment our circuit.
 							this.circuits[circ].nextHop = nextHop;
@@ -344,7 +344,7 @@ class ShallotModule extends RemoteCallable {
 							aes: aesKey,
 							lastHop: lastHopId,
 							nextHop: null
-						}
+						};
 
 						resolve(true);
 					},
@@ -378,11 +378,11 @@ class ShallotModule extends RemoteCallable {
 		}
 
 		if (inter.d !== undefined && inter.k !== undefined)
-			out.type = "build"
+			out.type = "build";
 		else if (inter.f !== undefined)
-			out.type = "finish"
+			out.type = "finish";
 		else if (inter.c !== undefined)
-			out.type = "content"
+			out.type = "content";
 		else
 			throw new Error("Illegal packet content: "+packetRaw);
 

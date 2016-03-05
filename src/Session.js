@@ -28,7 +28,7 @@ class Session {
 	}
 
 	send (data) {
-		return this.shallot._sendOnion(this.aesKeys, this.route[0].id, this.circ, data)
+		return this.shallot._sendOnion(this.aesKeys, this.route[0], this.circ, data)
 			.catch(reason => {
 				this.emit("close", this.route[this.route.length-1].id)
 			});
