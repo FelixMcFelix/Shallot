@@ -215,7 +215,7 @@ class ShallotModule extends RemoteCallable {
 										return this.cryptor.encrypt(msg, "RSA-OAEP");
 									},
 									verify (digest, signature) {
-										return this.cryptor.verify(digest, signature, "RSA-OAEP");
+										return this.cryptor.verify(digest, signature);
 									}
 								};
 
@@ -359,7 +359,7 @@ class ShallotModule extends RemoteCallable {
 	}
 
 	rsaSign (digest) {
-		return this.chord.key.privateKey.sign(digest, "RSA-OAEP");
+		return this.chord.key.privateKey.sign(digest);
 	}
 
 	static determinePacket (packetRaw) {
