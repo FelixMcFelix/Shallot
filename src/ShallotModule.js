@@ -296,7 +296,7 @@ class ShallotModule extends RemoteCallable {
 					break;
 				case "build":
 					//Parse the d field - this contains our next hop.
-					if(circData){
+					if(circData.nextHop && circData.nextCirc){
 						nextHop = circData.nextHop;
 						nextCirc = circData.nextCirc;
 					} else {
@@ -366,7 +366,8 @@ class ShallotModule extends RemoteCallable {
 						this.circuits[circ] = {
 							aes: aesKey,
 							lastHop: lastHopId,
-							nextHop: null
+							nextHop: null,
+							nextCirc: null
 						};
 
 						resolve(true);
