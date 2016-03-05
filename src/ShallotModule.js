@@ -9,7 +9,8 @@ const RemoteCallable = require("conductor-chord").RemoteCallable,
 	cipher = require("node-forge").cipher,
 	forgeUtil = require("node-forge").util,
 	u = require("./UtilFunctions.js"),
-	Session = require("./Session.js");
+	Session = require("./Session.js"),
+	RecvSession = require("./RecvSession.js");
 
 class ShallotModule extends RemoteCallable {
 	static get defaultConfig () {
@@ -27,16 +28,16 @@ class ShallotModule extends RemoteCallable {
 		this.config = u.mergeConfig(ShallotModule.defaultConfig, config);
 
 		this._rcTimeout = this.config.callTimeout;
-	    this._rcRetries = this.config.maxCallRetries;
-	    this._rcCacheDuration = this.config.rcCacheDuration;
+		this._rcRetries = this.config.maxCallRetries;
+		this._rcCacheDuration = this.config.rcCacheDuration;
 
-	    this._evts = new EventEmitter2({
-	    	maxListeners: 20
-	    });
+		this._evts = new EventEmitter2({
+			maxListeners: 20
+		});
 
-	    this.keyStore = {};
-	    this.sessions = {};
-	    this.circuits = {};
+		this.keyStore = {};
+		this.sessions = {};
+		this.circuits = {};
 
 		chord.registerModule(this);
 	}
@@ -67,7 +68,6 @@ class ShallotModule extends RemoteCallable {
 					.catch(
 						reason => this.error(message, reason)
 					);
-				break;
 				break;
 			case "b":
 				//BUILD
@@ -299,10 +299,15 @@ class ShallotModule extends RemoteCallable {
 						.catch(reason => reject(reason));
 					break;
 				case "finish":
+					//Read the data's f field - this is the link owner's ID.
+					let startId = packet.data.f;
+
 					//Create a new RecvSession for this circuit.
+					this.circuits[circ].session = new RecvSession(this, startId);
 					break;
 				case "content":
 					//Fire onmessage events of RecvSession attached to this circuit.
+					this.circuits[circ].session.content(packet.data.c);
 					break;
 			}
 		} );
