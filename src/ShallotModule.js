@@ -160,7 +160,7 @@ class ShallotModule extends RemoteCallable {
 						//of a relay.
 						if (index===0) {
 							internal.c = route[0].encrypt(firstCirc+ID.coerceString(this.chord.id));
-							internal.v = this.chord.key.private.sign(
+							internal.v = this.rsaSign(
 								sha3.sha3_224.hex(internal.k+internal.c)
 							);
 
@@ -266,7 +266,7 @@ class ShallotModule extends RemoteCallable {
 
 		return new Promise( (resolve, reject) => {
 			//Parse "s" - decrypt, then first 8 bytes are circuit, next 16 are iv for AES.
-			let decS = this.chord.key.private.decrypt(content.s),
+			let decS = this.rsaDecrypt(content.s),
 				circ = decS.substr(0, 8),
 				iv = decS.substr(8, 16);
 
@@ -277,7 +277,7 @@ class ShallotModule extends RemoteCallable {
 			switch (packet.type) {
 				case "build":
 					//Parse the d field - this contains our next hop.
-					let nextHop = this.chord.key.private.decrypt(packet.data.d),
+					let nextHop = this.rsaDecrypt(packet.data.d),
 						nextCirc = random.getBytesSync(8);
 
 					//Lookup next hop's public key.
@@ -286,7 +286,7 @@ class ShallotModule extends RemoteCallable {
 						.then( key => {
 							//Modify the packet with c, v fields.
 							packet.data.c = key.encrypt(nextCirc+ID.coerceString(nextHop));
-							packet.data.v = this.chord.key.private.sign(
+							packet.data.v = this.rsaSign(
 								sha3.sha3_224.hex(packet.data.k+packet.data.c)
 							);
 
@@ -324,8 +324,8 @@ class ShallotModule extends RemoteCallable {
 
 		//First, read in AES key, circuit and last hop.
 		return new Promise( (resolve, reject) => {
-			let aesKey = this.chord.key.private.decrypt(content.k),
-				decC = this.chord.key.private.decrypt(content.c),
+			let aesKey = this.rsaDecrypt(content.k),
+				decC = this.rsaDecrypt(content.c),
 				circ = decC.substr(0,8),
 				lastHopId = decC.slice(8),
 				verHash = sha3.sha3_224.hex(content.k+content.c);
@@ -352,6 +352,14 @@ class ShallotModule extends RemoteCallable {
 					err => reject(err)
 				)
 		} );
+	}
+
+	rsaDecrypt (data) {
+		return this.chord.key.privateKey.decrypt(data, "RSA-OAEP");
+	}
+
+	rsaSign (digest) {
+		return this.chord.key.privateKey.sign(digest, "RSA-OAEP");
 	}
 
 	static determinePacket (packetRaw) {
