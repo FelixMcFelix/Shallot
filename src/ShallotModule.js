@@ -365,7 +365,7 @@ class ShallotModule extends RemoteCallable {
 		let digestor = md.sha256.create();
 		digestor.update(data);
 
-		return key.verify(digestor.bytes(), signature);
+		return key.verify(digestor.digest().bytes(), signature);
 	}
 
 	static determinePacket (packetRaw) {
