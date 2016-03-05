@@ -317,7 +317,7 @@ class ShallotModule extends RemoteCallable {
 							this.circuits[circ].nextCirc = nextCirc;
 
 							//Send to next hop.
-							return this._sendBuild(nextHop, packet.data)
+							return this._sendBuild(key, packet.data)
 								.then(res => resolve(res));
 
 						})
