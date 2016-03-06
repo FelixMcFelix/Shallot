@@ -311,8 +311,8 @@ class ShallotModule extends RemoteCallable {
 							this._augmentBuild(packet.data, key, nextCirc);
 
 							//Augment our circuit.
-							this.circuits[circ].nextHop = nextHop;
-							this.circuits[circ].nextCirc = nextCirc;
+							circData.nextHop = nextHop;
+							circData.nextCirc = nextCirc;
 
 							//Send to next hop.
 							return this._sendBuild(key, packet.data)
@@ -326,13 +326,15 @@ class ShallotModule extends RemoteCallable {
 					let startId = packet.data.f;
 
 					//Create a new RecvSession for this circuit.
-					if (!this.circuits[circ].session)
-						this.circuits[circ].session = new RecvSession(this, startId);
+					if (!circData.session)
+						circData.session = new RecvSession(this, startId);
+
 					resolve(true);
 					break;
 				case "content":
 					//Fire onmessage events of RecvSession attached to this circuit.
-					this.circuits[circ].session.content(packet.data.c);
+					circData.session.content(packet.data.c);
+					
 					resolve(true);
 					break;
 			}
