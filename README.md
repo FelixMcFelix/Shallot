@@ -17,7 +17,25 @@ var Shallot = require("shallot").Shallot;
 //Module Only
 var Module = require("shallot").ShallotModule;
 
-window.s = new Shallot();
+window.s = new Shallot({
+  chordConfig: {
+    // See Chord repo for details.
+  },
+
+  shallotConfig: {
+    // Amount of nodes before endpoint.
+    routeLength: 3,
+
+    // Timeout duration for each call along the route.
+    callTimeout: 1500,
+
+    // Max attempts for each call along the route.
+    maxCallRetries: 3,
+
+    // Time to cache answered states for calls.
+    rcCacheDuration: 20000
+  }
+});
 
 //Join a chord network...
 s.join("ws://mcfelix.me:7171")
@@ -41,6 +59,30 @@ s.join("ws://mcfelix.me:7171")
       alert("Couldn't join chord server: " + error);
     }
   )
+```
+
+For a server node, using my modified [wrtc](https://github.com/FelixMcFelix/node-webrtc):
+
+```js
+var Shallot = require("shallot").Shallot,
+  wrtc = require("wrtc"),
+  SegfaultHandler = require("segfault-handler");
+
+SegfaultHandler.registerHandler("crash.log");
+
+var s = new Shallot(
+  {
+    chordConfig:{
+      conductorConfig: {
+        rtc_facade: wrtc
+      },
+
+      isServer: true,
+
+      debug: true
+    }
+  }
+);
 ```
 
 ## Changelog
