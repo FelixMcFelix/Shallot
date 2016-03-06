@@ -1,5 +1,5 @@
 {
-  "name": "shallot",
+  "name": "shallot-routing",
   "version": "1.0.0",
   "description": "Small scale distributed onion routing over WebRTC.",
   "main": "src/Shallot.js",

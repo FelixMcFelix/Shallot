@@ -22,7 +22,7 @@ class ShallotModule extends RemoteCallable {
 			routeLength: 3,
 			callTimeout: 1500,
 			maxCallRetries: 3,
-			rcCacheDuration: 5000
+			rcCacheDuration: 20000
 		};
 	};
 
