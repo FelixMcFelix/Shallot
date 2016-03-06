@@ -160,8 +160,7 @@ class ShallotModule extends RemoteCallable {
 						//If sending to the first node, we have to send a full build message instead
 						//of a relay.
 						if (index===0) {
-							internal.c = route[0].encrypt(firstCirc+ID.coerceString(this.chord.id));
-							internal.v = this.rsaSign(internal.k+internal.c);
+							this._augmentBuild(internal, route[0], firstCirc);
 
 							a = this._sendBuild(route[0], internal);
 						} else {
@@ -305,12 +304,10 @@ class ShallotModule extends RemoteCallable {
 					}
 
 					//Lookup next hop's public key.
-					delete packet.data.d;
 					this._lookupKey(nextHop)
 						.then( key => {
 							//Modify the packet with c, v fields.
-							packet.data.c = key.encrypt(nextCirc+ID.coerceString(nextHop));
-							packet.data.v = this.rsaSign(packet.data.k+packet.data.c);
+							this._augmentBuild(packet.data, key, circ);
 
 							//Augment our circuit.
 							this.circuits[circ].nextHop = nextHop;
@@ -338,6 +335,14 @@ class ShallotModule extends RemoteCallable {
 					break;
 			}
 		} );
+	}
+
+	_augmentBuild (object, nexthopKey, nextCirc) {
+		if (object.d)
+			delete object.d;
+
+		object.c = nexthopKey.encrypt(nextCirc+ID.coerceString(this.chord.id));
+		object.v = this.rsaSign(object.k+object.c);
 	}
 
 	_parseBuild (content) {
