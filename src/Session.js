@@ -1,11 +1,13 @@
 "use strict";
 
+const EventEmitter2 = require("eventemitter2").EventEmitter2;
+
 //EVENTS
 //	.on("close", destId)
 
 class Session {
 	constructor (shallot, route, aesKeys, circ) {
-		this.module = shallot;
+		this.shallot = shallot;
 		this.route = route;
 		this.aesKeys = aesKeys;
 		this.circ = circ;
@@ -28,7 +30,7 @@ class Session {
 	}
 
 	send (data) {
-		return this.shallot._sendOnion(this.aesKeys, this.route[0], this.circ, data)
+		return this.shallot._sendOnion(this.aesKeys, this.route[0], this.circ, {c: data})
 			.catch(reason => {
 				this.emit("close", this.route[this.route.length-1].id)
 			});
