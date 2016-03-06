@@ -304,10 +304,11 @@ class ShallotModule extends RemoteCallable {
 					}
 
 					//Lookup next hop's public key.
+					delete packet.data.d;
 					this._lookupKey(nextHop)
 						.then( key => {
 							//Modify the packet with c, v fields.
-							this._augmentBuild(packet.data, key, circ);
+							this._augmentBuild(packet.data, key, nextCirc);
 
 							//Augment our circuit.
 							this.circuits[circ].nextHop = nextHop;
@@ -325,7 +326,8 @@ class ShallotModule extends RemoteCallable {
 					let startId = packet.data.f;
 
 					//Create a new RecvSession for this circuit.
-					this.circuits[circ].session = new RecvSession(this, startId);
+					if (!this.circuits[circ].session)
+						this.circuits[circ].session = new RecvSession(this, startId);
 					resolve(true);
 					break;
 				case "content":
@@ -338,9 +340,6 @@ class ShallotModule extends RemoteCallable {
 	}
 
 	_augmentBuild (object, nexthopKey, nextCirc) {
-		if (object.d)
-			delete object.d;
-
 		object.c = nexthopKey.encrypt(nextCirc+ID.coerceString(this.chord.id));
 		object.v = this.rsaSign(object.k+object.c);
 	}
