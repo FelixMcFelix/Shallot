@@ -20,7 +20,7 @@ class ShallotModule extends RemoteCallable {
 	static get defaultConfig () {
 		return {
 			routeLength: 3,
-			callTimeout: 666,
+			callTimeout: 1500,
 			maxCallRetries: 3,
 			rcCacheDuration: 5000
 		};
@@ -334,7 +334,7 @@ class ShallotModule extends RemoteCallable {
 				case "content":
 					//Fire onmessage events of RecvSession attached to this circuit.
 					circData.session.content(packet.data.c);
-					
+
 					resolve(true);
 					break;
 			}
