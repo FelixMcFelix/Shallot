@@ -15,10 +15,10 @@ Shallot can be used either as a module for an existing Chord system, or as the b
 
 ```js
 //Full Shallot (includes Chord)
-var Shallot = require("shallot").Shallot;
+var Shallot = require("shallot-routing").Shallot;
 
 //Module Only
-var Module = require("shallot").ShallotModule;
+var Module = require("shallot-routing").ShallotModule;
 
 window.s = new Shallot({
   chordConfig: {
@@ -67,7 +67,7 @@ s.join("ws://mcfelix.me:7171")
 For a server node, using my modified [wrtc](https://github.com/FelixMcFelix/node-webrtc):
 
 ```js
-var Shallot = require("shallot").Shallot,
+var Shallot = require("shallot-routing").Shallot,
   wrtc = require("wrtc"),
   SegfaultHandler = require("segfault-handler");
 
