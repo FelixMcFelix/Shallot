@@ -3,6 +3,8 @@ Small-scale onion routing over WebRTC, built on top of [Conductor-Chord](https:/
 
 ***DISCLAIMER: THIS PROJECT IS A PROOF-OF-CONCEPT, AND SHOULD NOT BE USED WHERE SERIOUS SECURITY IS DESIRED!***
 
+Full report on the system design and security is located at [https://dl.dropboxusercontent.com/u/15574345/lv4-proj/FINAL/Dissertation/L4proj-15-16-SIMPSON%2Ckyle.pdf](https://dl.dropboxusercontent.com/u/15574345/lv4-proj/FINAL/Dissertation/L4proj-15-16-SIMPSON%2Ckyle.pdf).
+
 ## Overview
 
 Shallot uses the chord network to allow opening of an onion route to any other node of a known ID. The idea is that this can allow for security-focused apps to be designed around Chord's File System and ownership of keys, allowing you to tie usernames in an app to node IDs if desired.
