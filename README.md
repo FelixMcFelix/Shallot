@@ -3,7 +3,7 @@ Small-scale onion routing over WebRTC, built on top of [Conductor-Chord](https:/
 
 ***DISCLAIMER: THIS PROJECT IS A PROOF-OF-CONCEPT, AND SHOULD NOT BE USED WHERE SERIOUS SECURITY IS DESIRED!***
 
-Full report on the system design and security is located at [https://dl.dropboxusercontent.com/u/15574345/lv4-proj/FINAL/Dissertation/L4proj-15-16-SIMPSON%2Ckyle.pdf](https://dl.dropboxusercontent.com/u/15574345/lv4-proj/FINAL/Dissertation/L4proj-15-16-SIMPSON%2Ckyle.pdf).
+Full report on the system design and security is located [on my website](https://mcfelix.me/docs/shallot.pdf).
 
 ## Overview
 
